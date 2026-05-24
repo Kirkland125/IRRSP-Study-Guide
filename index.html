@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IRRSP Study Quiz</title>
+ 
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+
+    .card {
+      background: #16213e;
+      border-radius: 12px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 620px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    h1 { text-align: center; margin-bottom: 0.4rem; font-size: 1.8rem; }
+
+    .subtitle { text-align: center; color: #aaa; margin-bottom: 1.75rem; font-size: 0.9rem; }
+
+    .progress-bar { background: #0f3460; border-radius: 999px; height: 8px; margin-bottom: 1.25rem; }
+    .progress-fill { background: #e94560; height: 100%; border-radius: 999px; transition: width 0.3s ease; }
+
+    .question-number { color: #aaa; font-size: 0.82rem; margin-bottom: 0.4rem; }
+    .question-text { font-size: 1.05rem; font-weight: 600; margin-bottom: 1.25rem; line-height: 1.55; }
+
+    .choices { display: flex; flex-direction: column; gap: 0.65rem; }
+
+    .choice-btn {
+      background: #0f3460;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      color: #eee;
+      cursor: pointer;
+      font-size: 0.95rem;
+      padding: 0.65rem 1rem;
+      text-align: left;
+      transition: background 0.15s, border-color 0.15s;
+      line-height: 1.4;
+    }
+    .choice-btn:hover:not(:disabled) { border-color: #e94560; }
+    .choice-btn.correct  { background: #1a6b3c; border-color: #2ecc71; }
+    .choice-btn.wrong    { background: #6b1a1a; border-color: #e74c3c; }
+    .choice-btn:disabled { cursor: default; }
+
+    .feedback { margin-top: 0.85rem; min-height: 1.4rem; font-size: 0.9rem; color: #aaa; }
+
+    .next-btn {
+      display: none;
+      margin-top: 1.1rem;
+      width: 100%;
+      background: #e94560;
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 0.7rem;
+      transition: opacity 0.15s;
+    }
+    .next-btn:hover { opacity: 0.85; }
+
+    .screen { text-align: center; }
+    .screen p { color: #aaa; margin: 0.75rem 0 1.75rem; line-height: 1.6; font-size: 0.95rem; }
+
+    .big-btn {
+      background: #e94560;
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 0.7rem 2rem;
+      transition: opacity 0.15s;
+      margin: 0.4rem;
+    }
+    .big-btn:hover { opacity: 0.85; }
+    .big-btn.secondary { background: #0f3460; }
+
+    .score-display { font-size: 3rem; font-weight: 700; color: #e94560; margin: 0.5rem 0; }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+<div class="card">
+
+  <!-- Start screen -->
+  <div id="start-screen" class="screen">
+    <h1>IRRSP Study Quiz</h1>
+    <p>68 questions covering industrial radiography regulations, radiation physics, safety, and equipment.<br>Choose how many questions per session.</p>
+    <div>
+      <button class="big-btn" onclick="startQuiz(10)">10 Questions</button>
+      <button class="big-btn" onclick="startQuiz(25)">25 Questions</button>
+      <button class="big-btn" onclick="startQuiz(68)">All 68</button>
+    </div>
+  </div>
+
+  <!-- Quiz screen -->
+  <div id="quiz-screen" class="hidden">
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <div class="question-number" id="question-number"></div>
+    <div class="question-text" id="question-text"></div>
+    <div class="choices" id="choices"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="next-btn" id="next-btn" onclick="nextQuestion()">Next →</button>
+  </div>
+
+  <!-- Results screen -->
+  <div id="results-screen" class="screen hidden">
+    <h1>Results</h1>
+    <div class="score-display" id="score-display"></div>
+    <p id="results-message"></p>
+    <button class="big-btn" onclick="location.reload()">New Session</button>
+  </div>
+
+</div>
+
+<script>
+const questions = [
+  {
+    question: "In the early years of radiography, what caused personnel to be overexposed?",
+    choices: ["A) Poor equipment design", "B) Lack of understanding", "C) A lack of and poor safety practices", "D) All of the above"],
+    answer: 3
+  },
+  {
+    question: "The ultimate responsibility to adhere to the regulations, license conditions, and company policies at a temporary job site falls to:",
+    choices: ["A) The radiographer", "B) The assistant radiographer", "C) The radiation safety officer", "D) All radiation workers"],
+    answer: 0
+  },
+  {
+    question: "Regulations from one state to the next are essentially the same for radioactive materials.",
+    choices: ["A) True", "B) False"],
+    answer: 0
+  },
+  {
+    question: "Industrial radiography using gamma ray sources is regulated by:",
+    choices: ["A) The NRC", "B) OSHA", "C) Agreement States", "D) Both A & C are correct"],
+    answer: 3
+  },
+  {
+    question: "Historically, it has been proven that the predominant cause of overexposure is:",
+    choices: ["A) Improper surveys", "B) The source being left in an uncontrolled state", "C) The source not being locked once retracted to the shielded position", "D) All of the above"],
+    answer: 3
+  },
+  {
+    question: "Who is the first person the radiographer should seek guidance from in the event of an emergency?",
+    choices: ["A) The NRC", "B) A senior technician", "C) Their state or a federal jurisdiction hotline", "D) Their company RSO"],
+    answer: 3
+  },
+  {
+    question: "Any individual who uses radiographic exposure devices, sealed sources, related handling tools, or survey instruments while under the supervision of a radiographer is a(n):",
+    choices: ["A) Student", "B) Member of the public", "C) Assistant Radiographer", "D) Radiographer"],
+    answer: 2
+  },
+  {
+    question: "Who first discovered X-rays?",
+    choices: ["A) Marie Curie", "B) Albert Einstein", "C) Wilhelm Roentgen", "D) Thomas Edison"],
+    answer: 2
+  },
+  {
+    question: "Electromagnetic radiation travels:",
+    choices: ["A) In a motion which allows it to curve around objects", "B) At the speed of light", "C) At subsonic speeds", "D) Just slightly below the speed of light"],
+    answer: 1
+  },
+  {
+    question: "X-rays are produced by an x-ray tube by the:",
+    choices: ["A) Radioactive source inside the tube", "B) Passage of electrons striking radium", "C) Passage of electrons across the tube striking the target", "D) Radioisotope inner chamber"],
+    answer: 2
+  },
+  {
+    question: "Alpha particles are much like a helium nucleus as they have:",
+    choices: ["A) Two protons and two neutrons", "B) Two electrons and two neutrons", "C) One proton and two electrons", "D) Four protons and four neutrons"],
+    answer: 0
+  },
+  {
+    question: "Two basic types of radiation are:",
+    choices: ["A) Audible and visible", "B) Sub-light and faster than light", "C) Particulate and Electromagnetic", "D) Energetic and prolific"],
+    answer: 2
+  },
+  {
+    question: "Beta particles have a/an:",
+    choices: ["A) Positive charge", "B) Negative charge", "C) Neutral charge", "D) Alternating charge from positive to negative"],
+    answer: 1
+  },
+  {
+    question: "Alpha particles have a/an:",
+    choices: ["A) Positive charge", "B) Negative charge", "C) Neutral charge", "D) Alternating charge from positive to negative"],
+    answer: 0
+  },
+  {
+    question: "An element that has the same number of protons, but a different number of neutrons from the parent element is a(n):",
+    choices: ["A) Proton", "B) Neutron", "C) Electron", "D) Isotope"],
+    answer: 3
+  },
+  {
+    question: "Raising the kilovolts on the control panel affects the:",
+    choices: ["A) Penetrating capabilities of the X-rays produced", "B) Scatter of high-speed electrons within the X-ray generator", "C) Residual radiation left within the part", "D) Neutron bombardment of the element within"],
+    answer: 0
+  },
+  {
+    question: "Most of the energy used in producing X-rays converts to:",
+    choices: ["A) Photon fields", "B) Heat", "C) X-ray production", "D) Photons"],
+    answer: 1
+  },
+  {
+    question: "The structure known as the cathode serves as the _____________ source.",
+    choices: ["A) Proton", "B) Neutron", "C) Electron", "D) Photon"],
+    answer: 2
+  },
+  {
+    question: "Increasing _____________ across the filament increases the number of free electrons able to cross and strike the anode target, creating more X-radiation.",
+    choices: ["A) Alternating Current", "B) Direct Current", "C) Kilovoltage", "D) Milliamperes"],
+    answer: 3
+  },
+  {
+    question: "X-radiation is produced when a supply of:",
+    choices: ["A) High-speed electrons from the cathode strike the anode within a vacuum sealed envelope", "B) High-speed electrons from the anode strike the cathode within a vacuum sealed envelope", "C) High-speed protons from the cathode strike the anode within a vacuum sealed envelope", "D) High-speed protons from the anode strike the cathode within a vacuum sealed envelope"],
+    answer: 0
+  },
+  {
+    question: "The high-vacuum envelope is used to reduce:",
+    choices: ["A) Scatter of the radiation produced", "B) The problems of electrons colliding with and being absorbed by molecules of air", "C) The loss of energy within the filters", "D) The production of several X-radiation energies when striking the anode target"],
+    answer: 1
+  },
+  {
+    question: "In most cases the standard anode material is:",
+    choices: ["A) Beryllium", "B) Lead", "C) Tungsten", "D) Titanium"],
+    answer: 2
+  },
+  {
+    question: "In most X-ray tubes _____________ is used as an exit port for the X-radiation energy:",
+    choices: ["A) Boron", "B) Tungsten", "C) Molybdenum", "D) Beryllium"],
+    answer: 3
+  },
+  {
+    question: "The expected penetrating power in steel of 50 kV to 150 kV is:",
+    choices: ["A) Less than 1/8 in", "B) 1/8 in to 3/4 in", "C) 1/4 in to 2 in", "D) 3/4 in to 3 in"],
+    answer: 1
+  },
+  {
+    question: "Van de Graaff generators obtain their electrons through:",
+    choices: ["A) Electrostatic principles", "B) Accelerated electrons within an annular tube", "C) Multiple straight alternating segments from cathode to anode", "D) A combination of all the above"],
+    answer: 0
+  },
+  {
+    question: "Electrons are accelerated in a betatron by applying:",
+    choices: ["A) An electrostatic field", "B) A magnetic field", "C) More voltage to the anode", "D) More amperage to the anode"],
+    answer: 1
+  },
+  {
+    question: "Which of the following consists of a series of cylinders of increasing lengths stretching from cathode to anode with a gap between each cylinder?",
+    choices: ["A) Van de Graaff generator", "B) Betatron", "C) Linear accelerator", "D) None of the above"],
+    answer: 2
+  },
+  {
+    question: "An electromagnetic device used to change a particular alternating voltage to either a higher or lower value is known as a:",
+    choices: ["A) X-ray tube", "B) Betatron", "C) Transformer", "D) Rectifier"],
+    answer: 2
+  },
+  {
+    question: "Units that operate by charging a capacitor to the desired kilovoltage and then discharging this electrical energy across the tube are known as:",
+    choices: ["A) Betatrons", "B) Linear accelerators", "C) Van de Graaff generators", "D) Pulse X-ray tubes"],
+    answer: 3
+  },
+  {
+    question: "Radio waves, microwaves, and infrared waves are types of:",
+    choices: ["A) Ionizing radiation", "B) Nonionizing radiation", "C) Visible light waves", "D) Non-visible light waves"],
+    answer: 1
+  },
+  {
+    question: "Which of the following is an ionization process?",
+    choices: ["A) Photoelectric effect", "B) Compton scatter", "C) Pair production", "D) All of the above"],
+    answer: 3
+  },
+  {
+    question: "A type of radiation that directly or indirectly displaces electrons from the original shell of atoms is called _____________ radiation.",
+    choices: ["A) Ionizing", "B) Non-ionizing", "C) Electrostatic", "D) Low level"],
+    answer: 0
+  },
+  {
+    question: "In which process is some of the photon's energy used to dislodge an orbital electron and the remainder used to give the free electron kinetic energy?",
+    choices: ["A) Photoelectric effect", "B) Compton scatter", "C) Pair production", "D) None of the above"],
+    answer: 0
+  },
+  {
+    question: "In which process is some of the photon's energy used to dislodge an orbital electron and the remainder given off as a secondary photon?",
+    choices: ["A) Photoelectric effect", "B) Compton scatter", "C) Pair production", "D) None of the above"],
+    answer: 1
+  },
+  {
+    question: "What is the unit of measure of ionization in air due to the passage of gamma or x-radiation?",
+    choices: ["A) Inch", "B) Pressure per square inch", "C) Roentgen", "D) Protons per atom"],
+    answer: 2
+  },
+  {
+    question: "How many milliroentgen (mR) are in one roentgen (R)?",
+    choices: ["A) 10", "B) 100", "C) 1,000", "D) 10,000"],
+    answer: 2
+  },
+  {
+    question: "What is the unit of measurement for the effect of any type of radiation on man that is equivalent to one roentgen of gamma radiation?",
+    choices: ["A) Roentgen", "B) Curie", "C) REM", "D) RAD"],
+    answer: 2
+  },
+  {
+    question: "All radiation exposures are equally serious and can result in death.",
+    choices: ["A) True", "B) False"],
+    answer: 1
+  },
+  {
+    question: "The maximum annual occupational dose for adults working with radioactive material is:",
+    choices: ["A) 5 mrem", "B) 500 mrem", "C) 0.5 REM", "D) 5 REM"],
+    answer: 3
+  },
+  {
+    question: "The most radiosensitive cells in the human body are:",
+    choices: ["A) Skin cells", "B) Body extremities", "C) Cells of the reproductive organs", "D) White blood cells"],
+    answer: 3
+  },
+  {
+    question: "Prompt effects from radiation exposure are those effects that occur:",
+    choices: ["A) 10 years from the date of the exposure", "B) In future generations", "C) Within a short period of time after exposure", "D) In other individuals exposed to radiation"],
+    answer: 2
+  },
+  {
+    question: "REM stands for:",
+    choices: ["A) Radiation Employing Machine", "B) Roentgen Equals Mass", "C) Radiation Effect Measurement", "D) Roentgen Equivalent Man"],
+    answer: 3
+  },
+  {
+    question: "Biological effects of radiation are separated into two major classes. These classes are:",
+    choices: ["A) Chronic effects and latent effects", "B) Genetic effects and somatic effects", "C) Genetic effects and chronic effects", "D) Acute effects and somatic effects"],
+    answer: 1
+  },
+  {
+    question: "A dosimeter measures:",
+    choices: ["A) Dose rate", "B) Lifetime exposure", "C) Weekly exposure", "D) Dose received since the last time it was charged"],
+    answer: 3
+  },
+  {
+    question: "Dosimeters and rate alarms must be calibrated every:",
+    choices: ["A) Three months", "B) 6 months", "C) 12 months", "D) Prior to each use"],
+    answer: 2
+  },
+  {
+    question: "Which type of survey meter is considered most appropriate for industrial radiography?",
+    choices: ["A) Geiger-Muller tube", "B) Ion chamber", "C) Scintillation counter", "D) Proportional counter"],
+    answer: 0
+  },
+  {
+    question: "A survey meter must be calibrated at two points (one-third and two-thirds scale) on each range. The accuracy of each reading must be within:",
+    choices: ["A) 5%", "B) 10%", "C) 20%", "D) 30%"],
+    answer: 2
+  },
+  {
+    question: "Which of the following detects, measures, or records ionizing radiation?",
+    choices: ["A) Thermoluminescent dosimeter", "B) Film badge", "C) Survey meter", "D) All of the above"],
+    answer: 3
+  },
+  {
+    question: "When conducting radiographic operations, which of the following must individuals have with them at all times?",
+    choices: ["A) Pocket dosimeter only", "B) Film badge only", "C) Rate alarm and survey meter only", "D) All of the above (dosimeter, film badge, rate alarm, survey meter)"],
+    answer: 3
+  },
+  {
+    question: "If a radiographer's dosimeter goes off-scale during operations, the best course of action is:",
+    choices: ["A) Re-zero the dosimeter and resume work", "B) Assume maximum dose for the day and return tomorrow", "C) Cease work immediately and turn in the film badge for immediate processing", "D) Take a break until another dosimeter can be brought out"],
+    answer: 2
+  },
+  {
+    question: "An alarming rate meter can be used in place of a survey meter.",
+    choices: ["A) True", "B) False"],
+    answer: 1
+  },
+  {
+    question: "When working with radiation, what are the three key components in reducing exposure?",
+    choices: ["A) Time, temperature, pressure", "B) Film badge, dosimeter, rate alarm", "C) Age, health, extent of exposure", "D) Time, distance, shielding"],
+    answer: 3
+  },
+  {
+    question: "If you double your distance from the source, the intensity will be decreased by a factor of:",
+    choices: ["A) 2", "B) 3", "C) 4", "D) 8"],
+    answer: 2
+  },
+  {
+    question: "When may radiography be performed without posting the radiation area?",
+    choices: ["A) When direct surveillance is maintained", "B) In an exposure room", "C) Never", "D) During short exposures"],
+    answer: 2
+  },
+  {
+    question: "The restricted area boundary must be posted where no one can receive a dose of more than ______________ in any one hour:",
+    choices: ["A) 2 mR/hr", "B) 5 mR/hr", "C) 2 mrem", "D) 100 mR/hr"],
+    answer: 2
+  },
+  {
+    question: "The radiation area boundary must be posted where no one can receive a dose of more than ______________ in any one hour:",
+    choices: ["A) 2 mR/hr", "B) 5 mR/hr", "C) 5 mrem", "D) 100 mR/hr"],
+    answer: 2
+  },
+  {
+    question: "A high radiation area boundary must be posted where no one could receive a dose of more than ______________ in any one hour:",
+    choices: ["A) 2 mrem", "B) 5 mrem", "C) 5 mR/hr", "D) 100 mrem"],
+    answer: 3
+  },
+  {
+    question: "What requirements must the area outside of a permanent radiographic installation meet?",
+    choices: ["A) Unrestricted area requirements", "B) Radiation area requirements", "C) High radiation area requirements", "D) Very high radiation area requirements"],
+    answer: 0
+  },
+  {
+    question: "High radiation control devices must be tested for proper operation:",
+    choices: ["A) Daily", "B) Weekly", "C) Monthly", "D) At the beginning of each period of use"],
+    answer: 3
+  },
+  {
+    question: "When shall a radiographic exposure device be locked to prevent unauthorized removal?",
+    choices: ["A) When under direct visual surveillance", "B) When asked to by your RSO", "C) At times when not under direct visual surveillance", "D) When being used at a temporary job site"],
+    answer: 2
+  },
+  {
+    question: "Each radiographic device must have a durable, legible, and clearly visible label bearing which of the following?",
+    choices: ["A) Chemical symbol and mass number of the radioactive source", "B) The activity and the date it was last measured", "C) The model and serial number of the sealed device", "D) All of the above"],
+    answer: 3
+  },
+  {
+    question: "An equipment operational check must be performed by the radiography crew how often?",
+    choices: ["A) At least once a day", "B) At least once a week", "C) At intervals not to exceed once a month", "D) Annually"],
+    answer: 0
+  },
+  {
+    question: "When should a collimator be used?",
+    choices: ["A) When the state is auditing you", "B) At all times except when physically impossible", "C) Only if using a cobalt source", "D) Only if using an iridium source"],
+    answer: 1
+  },
+  {
+    question: "Barricade tape is to be used:",
+    choices: ["A) Only if the state is present", "B) When in the darkroom developing film", "C) At all times when performing radiography", "D) Only when the RSO instructs you to"],
+    answer: 2
+  },
+  {
+    question: "During radiographic operations, when is it not allowed to post a radiation area?",
+    choices: ["A) When direct visual surveillance is maintained", "B) In an exposure room", "C) Never — it must always be posted", "D) During short exposures"],
+    answer: 2
+  },
+  {
+    question: "Any state with which the U.S. Nuclear Regulatory Commission has entered into an effective agreement is called a(n):",
+    choices: ["A) NRC State", "B) Agreement State", "C) Compliant State", "D) Nuclear State"],
+    answer: 1
+  },
+  {
+    question: "A performance audit must be performed on radiographers at intervals not to exceed:",
+    choices: ["A) Monthly", "B) Quarterly", "C) At least every 6 months", "D) At least annually"],
+    answer: 2
+  },
+  {
+    question: "Instructions for the safe operation of ionizing radiation producing equipment and materials can be found in the:",
+    choices: ["A) Quality systems manual", "B) Operating and Emergency Procedures", "C) Material safety data sheet", "D) Job safety analysis"],
+    answer: 1
+  }
+];
+
+let deck = [];
+let current = 0;
+let score = 0;
+
+function startQuiz(count) {
+  const shuffled = [...questions].sort(() => Math.random() - 0.5);
+  deck = shuffled.slice(0, Math.min(count, shuffled.length));
+  current = 0;
+  score = 0;
+  show("quiz-screen");
+  loadQuestion();
+}
+
+function loadQuestion() {
+  const q = deck[current];
+  const total = deck.length;
+
+  document.getElementById("progress-fill").style.width = `${(current / total) * 100}%`;
+  document.getElementById("question-number").textContent = `Question ${current + 1} of ${total}`;
+  document.getElementById("question-text").textContent = q.question;
+  document.getElementById("feedback").textContent = "";
+  document.getElementById("next-btn").style.display = "none";
+
+  const choicesEl = document.getElementById("choices");
+  choicesEl.innerHTML = "";
+  q.choices.forEach((text, i) => {
+    const btn = document.createElement("button");
+    btn.className = "choice-btn";
+    btn.textContent = text;
+    btn.onclick = () => selectAnswer(i, btn);
+    choicesEl.appendChild(btn);
+  });
+}
+
+function selectAnswer(index, btn) {
+  const q = deck[current];
+  const buttons = document.querySelectorAll(".choice-btn");
+
+  buttons.forEach(b => b.disabled = true);
+
+  if (index === q.answer) {
+    btn.classList.add("correct");
+    document.getElementById("feedback").textContent = "Correct!";
+    score++;
+  } else {
+    btn.classList.add("wrong");
+    buttons[q.answer].classList.add("correct");
+    document.getElementById("feedback").textContent = "Not quite — the correct answer is highlighted.";
+  }
+
+  document.getElementById("next-btn").style.display = "block";
+}
+
+function nextQuestion() {
+  current++;
+  if (current < deck.length) {
+    loadQuestion();
+  } else {
+    showResults();
+  }
+}
+
+function showResults() {
+  document.getElementById("progress-fill").style.width = "100%";
+  const total = deck.length;
+  document.getElementById("score-display").textContent = `${score} / ${total}`;
+
+  const pct = score / total;
+  const msg =
+    pct === 1   ? "Perfect score! Outstanding." :
+    pct >= 0.8  ? "Great job! Almost there." :
+    pct >= 0.6  ? "Decent start. Keep studying." :
+                  "Keep at it — review the material and try again.";
+  document.getElementById("results-message").textContent = msg;
+
+  show("results-screen");
+}
+
+function show(id) {
+  ["start-screen", "quiz-screen", "results-screen"].forEach(s => {
+    document.getElementById(s).classList.toggle("hidden", s !== id);
+  });
+}
+</script>
+</body>
+</html>
